@@ -1,0 +1,451 @@
+<style>
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;align-items:center}
+.picker{position:relative}
+.picker>summary{list-style:none;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 10px;font-size:12.5px;user-select:none;white-space:nowrap}
+.picker>summary::-webkit-details-marker{display:none}
+.picker[open]>summary{border-color:var(--ink)}
+.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:8;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:8px;display:grid;gap:2px;min-width:210px;max-height:340px;overflow:auto}
+.menu label{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:5px;cursor:pointer;font-size:13px;white-space:nowrap}
+.menu label:hover,.menu button:hover{background:var(--soft)}
+.menu button{border:0;background:none;text-align:left;padding:6px 8px;border-radius:5px;cursor:pointer;font-size:13px}
+.menu .mh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:4px 6px}
+.menu .mn{font-size:11.5px;color:var(--muted);padding:6px;white-space:normal;max-width:240px;border-top:1px solid var(--line);margin-top:4px}
+th[data-sk]:hover{color:var(--ink)}
+th .ar{font-size:9px;margin-left:3px}
+td.code{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted)}
+td.l,th.l{text-align:left}
+td.zero{color:var(--faint)}
+.hourgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.hourgrid{grid-template-columns:minmax(0,1fr)}}
+.panel.collapsed .wb,.panel.collapsed .tools,.panel.collapsed .right{display:none}
+.panel.collapsed .ph{margin-bottom:0}
+.wc{border:1px solid var(--line);background:var(--surface);border-radius:5px;cursor:pointer;color:var(--muted);font-size:14px;width:24px;height:24px;line-height:1;padding:0;align-self:center}
+.wc:hover{color:var(--ink)}
+.hk{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.hk>div{background:var(--soft);border-radius:8px;padding:10px 14px}
+.hk .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.hk .v{font-family:var(--display);font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.hk .d{font-size:12.5px;color:var(--muted)}
+rect.hb{fill:transparent}rect.hb:hover{fill:var(--soft)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.cchip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:13px}
+.cchip button{border:0;background:var(--soft);border-radius:50%;width:22px;height:22px;cursor:pointer;color:var(--muted)}
+.cchip button:hover{color:var(--bad)}
+.addc{display:grid;gap:6px;max-width:520px}
+.addc input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;min-width:240px;flex:1}
+.err{color:var(--bad);font-size:12.5px}
+.bar3{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-block:0 10px}
+.soon{display:grid;gap:10px;justify-items:start;padding:40px 28px}
+.soon .tag{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;border:1px solid var(--warn);color:var(--warn);border-radius:999px;padding:2px 10px}
+.soon h2{font-family:var(--display);font-size:26px;margin:0;font-weight:600}
+.soon p{margin:0;color:var(--muted);max-width:62ch}
+#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
+</style>
+<div id="toast" role="status"></div>
+<script>
+const S={tab:"overview",sub:{},p:"mtd",from:null,to:null,cat:"All",tm:"val",pv:"total",incC:true,collapsed:{},cust:{0:["Myntra Jabong"],1:["Flipkart India"],2:["Cocoblu"],4:["Reliance Retail","Block Pool"]},hm:"units",pm:"units",cols:{},sort:{},open:{}};
+const COLORS=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)"];
+const CATS=["Footwear","Apparel","Accessories"];
+let D,CH,ITEMS,ASOF,ASOF_D,ASOF_H;
+const T={};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const inr=v=>"₹"+Math.round(v).toLocaleString("en-IN");
+function lakh(v){const a=Math.abs(v);if(a>=1e7)return "₹"+(v/1e7).toFixed(2)+" Cr";if(a>=1e5)return "₹"+(v/1e5).toFixed(2)+" L";if(a>=1e3)return "₹"+(v/1e3).toFixed(1)+"K";return "₹"+Math.round(v)}
+const num=v=>Math.round(v).toLocaleString("en-IN");
+const pct=(a,b)=>b?((a-b)/b*100):null;
+function delta(a,b,label){const p=pct(a,b);if(p===null)return `<span class="muted">no ${esc(label)} data</span>`;const up=p>=0;return `<span class="${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(p).toFixed(0)}%</span> <span class="muted">vs ${esc(label)}</span>`}
+function addDays(d,n){const x=new Date(d+"T00:00:00Z");x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)}
+const hl=h=>h===0||h===24?"midnight":h===12?"noon":h<12?h+"am":(h-12)+"pm";
+function fmtD(d,o){return new Date(d+"T00:00:00").toLocaleDateString("en-IN",o||{day:"numeric",month:"short"})}
+const fmtDay=d=>fmtD(d,{weekday:"short",day:"numeric",month:"short"});
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/864e5)+1}
+function toast(m){const t=$("#toast");t.textContent=m;t.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.opacity=0,2200)}
+
+/* ---------- periods ---------- */
+function range(){
+  const t=ASOF_D;
+  if(S.p==="today")return{s:t,e:t,label:"Today",prev:{s:addDays(t,-1),e:addDays(t,-1),h:ASOF_H,label:"same time yesterday"}};
+  if(S.p==="yday"){const y=addDays(t,-1);return{s:y,e:y,label:"Yesterday",prev:{s:addDays(y,-1),e:addDays(y,-1),label:"day before"}}}
+  if(S.p==="l7"){const e=addDays(t,-1),s=addDays(t,-7);return{s,e,label:"Last 7 days",prev:{s:addDays(s,-7),e:addDays(e,-7),label:"previous 7 days"}}}
+  if(S.p==="mtd"){const s=t.slice(0,8)+"01";const y=+t.slice(0,4),m=+t.slice(5,7);const pm=m===1?`${y-1}-12-01`:`${y}-${String(m-1).padStart(2,"0")}-01`;let pe=addDays(pm,+t.slice(8,10)-1);if(pe>=s)pe=addDays(s,-1);return{s,e:t,label:"Month to date",prev:{s:pm,e:pe,label:"same days last month"}}}
+  if(S.p==="ytd"){const y=+t.slice(0,4),m=+t.slice(5,7);const s=(m>=4?y:y-1)+"-04-01";const ly=d=>(+d.slice(0,4)-1)+d.slice(4);return{s,e:t,label:"Year to date",prev:{s:ly(s),e:ly(t),label:"same period last year"}}}
+  const s=S.from,e=S.to,n=daysBetween(s,e);return{s,e,label:"Custom range",prev:{s:addDays(s,-n),e:addDays(s,-1),label:"previous "+n+" days"}};
+}
+let FIRST_D="";
+function dayList(R){const out=[];let s0=R.s;if(FIRST_D&&s0<FIRST_D&&R.e>=FIRST_D)s0=FIRST_D;for(let d=s0;d<=R.e;d=addDays(d,1))out.push(d);return out}
+
+/* ---------- aggregation ---------- */
+// drop row: [date, ch, hour, itemIdx, qty, val, cancelled, orderIdx]
+function inR(r,R){return r[0]>=R.s&&r[0]<=R.e&&(R.h===undefined||r[2]<=R.h)}
+const catOk=r=>S.cat==="All"||ITEMS[r[3]][4]===S.cat;
+const ok=r=>S.incC||!r[6];
+function dropRows(R,ch){return D.drop.filter(r=>(ch==null||r[1]===ch)&&inR(r,R)&&catOk(r))}
+function agg(rows){const o=new Set(),oc=new Set();let q=0,v=0,cq=0,cv=0;for(const r of rows){if(r[6]){cq+=r[4];cv+=r[5];oc.add(r[7])}else{q+=r[4];v+=r[5];o.add(r[7])}}const g=S.incC;return{orders:g?new Set([...o,...oc]).size:o.size,units:g?q+cq:q,val:g?v+cv:v,netUnits:q,netVal:v,cOrders:oc.size,cUnits:cq,cVal:cv}}
+function byDay(rows){const m={};for(const r of rows)(m[r[0]]||(m[r[0]]=[])).push(r);return m}
+
+/* ---------- generic table: column picker, sort, tree, export ---------- */
+// col: {k,l,f:'t'|'n'|'r'|'p'|'d'|'code', hide, fixed, left}
+function isHidden(id,c){const o=S.cols[id];return c.fixed?false:(o&&c.k in o)?o[c.k]:!!c.hide}
+function cellFmt(c,v,row){
+  if(v===undefined||v===null||v==="")return `<td class="${c.f==="code"?"code":""}${c.left||c.f==="t"||c.f==="code"?" l":""}"></td>`;
+  let s;switch(c.f){case "n":s=num(v);break;case "r":s=inr(v);break;case "p":s=v.toFixed(1)+"%";break;case "n1":s=v.toFixed(1);break;case "d":s=fmtDay(v);break;default:s=esc(v)}
+  const zero=(c.f==="n"||c.f==="r"||c.f==="n1")&&!v;
+  if(c.f==="sd")return `<td class="${v>0.05?"up":v<-0.05?"down":""}">${(v>=0?"+":"")+v.toFixed(1)}</td>`;
+  return `<td class="${c.f==="code"?"code l":c.left||c.f==="t"?"l":""}${zero?" zero":""}">${zero?"–":s}</td>`;
+}
+function sortNodes(nodes,id){const st=S.sort[id]||T[id].sort;if(!st)return nodes;const c=T[id].cols.find(x=>x.k===st.k);if(!c)return nodes;
+  const num_=!!c.sk||["n","r","p","n1","sd"].includes(c.f);const kk=c.sk||st.k;
+  return [...nodes].sort((a,b)=>{const x=a.v[kk],y=b.v[kk];let r=num_?(x||0)-(y||0):String(x??"").localeCompare(String(y??""),undefined,{numeric:true});return st.dir==="asc"?r:-r})}
+function tableHTML(id){
+  const t=T[id];const cols=t.cols.filter(c=>!isHidden(id,c));const st=S.sort[id]||t.sort||{};const open=S.open[id]||(S.open[id]=new Set());
+  let h=`<table><thead><tr>${cols.map(c=>`<th data-sk="${c.k}" data-t="${id}" class="${c.left||c.f==="t"||c.f==="code"?"l":""}" aria-sort="${st.k===c.k?(st.dir==="asc"?"ascending":"descending"):"none"}">${esc(c.l)}${st.k===c.k?`<span class="ar">${st.dir==="asc"?"▲":"▼"}</span>`:""}</th>`).join("")}</tr></thead><tbody>`;
+  const walk=(nodes,lvl,path)=>{for(const n of sortNodes(nodes,id)){const key=path+"/"+n.key;const has=n.kids&&n.kids.length;const isOpen=open.has(key);
+    h+=`<tr class="${t.tree?"l"+(lvl+1):""}">`+cols.map((c,i)=>{if(i===0&&t.tree){return `<td class="l">${has?`<button class="tg" type="button" data-tg="${esc(key)}" data-t="${id}" aria-expanded="${isOpen}" aria-label="${isOpen?"Collapse":"Expand"}">${isOpen?"▾":"▸"}</button>`:`<span style="display:inline-block;width:18px"></span>`}${esc(n.v[c.k])}${lvl===0&&n.tag?` <span class="muted" style="font-size:11.5px">${esc(n.tag)}</span>`:""}</td>`}return cellFmt(c,n.v[c.k],n)}).join("")+`</tr>`;
+    if(has&&isOpen)walk(n.kids,lvl+1,key)}};
+  walk(t.rows,0,"");
+  h+=`</tbody>`;
+  if(t.total)h+=`<tfoot><tr class="tot">${cols.map((c,i)=>i===0?`<td class="l">Total</td>`:cellFmt(c,t.total[c.k])).join("")}</tr></tfoot>`;
+  if(!t.rows.length)h+=`<tbody><tr><td colspan="${cols.length}" class="empty">Nothing in this period.</td></tr></tbody>`;
+  return h+`</table>`;
+}
+function tableTools(id){const t=T[id];const pick=t.cols.filter(c=>!c.fixed);
+  return `<div class="tools">${t.extraTools||""}<details class="picker"><summary>Columns</summary><div class="menu"><div class="mh">Show columns</div>${pick.map(c=>`<label><input type="checkbox" data-col="${c.k}" data-t="${id}" ${isHidden(id,c)?"":"checked"}>${esc(c.l)}</label>`).join("")}</div></details>
+  <details class="picker"><summary>Export</summary><div class="menu"><button type="button" data-exp="xlsx" data-t="${id}">Excel (.xlsx)</button><button type="button" data-exp="csv" data-t="${id}">CSV</button><button type="button" data-exp="copy" data-t="${id}">Copy, to paste into Excel</button><div class="mn">Exports every row${t.tree?" at SKU level":""} and every column, including SKU code and GTIN.</div></div></details></div>`}
+function refreshTable(id){const el=$("#tb-"+id);if(el)el.innerHTML=tableHTML(id)}
+/* export */
+function exportRows(id){const t=T[id];const cols=t.xcols||t.cols;const out=[cols.map(c=>c.l)];
+  const leaves=[];const walk=(ns)=>{for(const n of sortNodes(ns,id)){if(t.tree&&n.kids&&n.kids.length)walk(n.kids);else leaves.push(n)}};walk(t.rows);
+  for(const n of leaves)out.push(cols.map(c=>{const v=n.v[c.k];if(v==null)return "";if(c.f==="r")return Math.round(v*100)/100;if(c.f==="p")return Math.round(v*10)/10;return v}));
+  if(t.total&&!t.tree)out.push(cols.map((c,i)=>i===0?"Total":(t.total[c.k]??"")));
+  return out}
+function fileName(id){const R=range();return `TenxYou_${T[id].file}_${R.s}_to_${R.e}`}
+function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+let xlsxP=null;function loadXlsx(){return xlsxP||(xlsxP=new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)}))}
+async function doExport(id,kind){const rows=exportRows(id);
+  if(kind==="copy"){const tsv=rows.map(r=>r.map(x=>String(x).replace(/\t|\n/g," ")).join("\t")).join("\n");try{await navigator.clipboard.writeText(tsv);toast(`Copied ${rows.length-1} rows. Paste into Excel.`)}catch(e){toast("Copy was blocked. Try Excel or CSV.")}return}
+  if(kind==="csv"){const csv=rows.map(r=>r.map(x=>{const s=String(x);return /[",\n]/.test(s)||/^\d{12,14}$/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(",")).join("\r\n");download(new Blob(["﻿"+csv],{type:"text/csv"}),fileName(id)+".csv");toast("CSV download started");return}
+  try{await loadXlsx();const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Data");XLSX.writeFile(wb,fileName(id)+".xlsx");toast("Excel download started")}catch(e){toast("Couldn't build the Excel file. Try CSV.")}}
+
+/* ---------- tooltip + charts ---------- */
+const tip=$("#tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY-h-10;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y<8)y=e.clientY+16;tip.style.left=x+"px";tip.style.top=y+"px"}
+function bindTips(root){root.querySelectorAll("[data-tip]").forEach(el=>{el.addEventListener("mousemove",e=>showTip(e,el.dataset.tip));el.addEventListener("mouseleave",()=>tip.style.opacity=0)})}
+function niceTicks(v){const raw=v/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));const m=raw/p;const st=[1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(k=>m<=k&&(k!==2.5||p>=10));return st*p*4}
+function niceMax(v){const p=Math.pow(10,Math.floor(Math.log10(v)));const m=v/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+function roundTop(x,y,w,h,r){if(h<r)r=h;return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
+function stackedBars(days,series,colors,fmt,names,short){
+  const W=760,H=250,L=54,B=26,T_=22,Rr=8,n=days.length;const tot=days.map((_,i)=>series.reduce((a,s)=>a+s[i],0));
+  const mx=niceTicks(Math.max(4,...tot)*1.08);const cw=(W-L-Rr)/n,bw=Math.max(3,Math.min(34,cw*0.68));const y=v=>T_+(H-T_-B)*(1-v/mx);
+  let g="";for(let k=0;k<=4;k++){const v=mx*k/4;g+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v,true)}</text>`}
+  const every=Math.ceil(n/12);let bars="";const fs=cw<24?9.5:10.5;
+  days.forEach((d,i)=>{const cx=L+cw*i+cw/2;let acc=0;let segs="";
+    series.forEach((s,k)=>{const v=s[i];if(!v)return;const y0=y(acc),y1=y(acc+v);const h=Math.max(0,y0-y1-(acc>0?2:0));const isTop=series.slice(k+1).every(z=>!z[i]);
+      segs+=isTop?`<path d="${roundTop(cx-bw/2,y1,bw,h,Math.min(4,bw/2))}" fill="${colors[k]}"/>`:`<rect x="${cx-bw/2}" y="${y1}" width="${bw}" height="${h}" fill="${colors[k]}"/>`;acc+=v});
+    const t=`<b>${fmtDay(d)}</b><br>`+series.map((s,k)=>`${names[k]}: ${fmt(s[i])}`).join("<br>")+(series.length>1?`<br><b>Total: ${fmt(tot[i])}</b>`:"");
+    bars+=`<g data-tip="${esc(t)}"><rect x="${L+cw*i}" y="${T_}" width="${cw}" height="${H-T_-B}" fill="transparent"/>${segs}</g>`;
+    if(short&&tot[i]>0&&cw>=16)bars+=`<text x="${cx}" y="${y(tot[i])-5}" text-anchor="middle" style="font-size:${fs}px;fill:var(--ink);pointer-events:none">${short(tot[i])}</text>`;
+    if(i%every===0)bars+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${fmtD(d)}</text>`});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Daily trend">${g}<line x1="${L}" x2="${W-Rr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)"/>${bars}</svg>`;
+}
+/* ---------- table builders ---------- */
+const SKUCOLS=[{k:"sku",l:"SKU code",f:"code",hide:true},{k:"gtin",l:"GTIN",f:"code",hide:true}];
+function prodTree(rows,valueKey,dayKeys,perCh){
+  // style -> colour -> SKU ; values: units,val,cu,orders(set)
+  const P={};
+  for(const r of rows){const it=ITEMS[r[3]];
+    const s=P[it[1]]||(P[it[1]]={key:it[1],tag:it[4],v:{name:it[1],style:it[1],cat:it[4]},m:{},kidsM:{}});
+    const c=s.kidsM[it[2]]||(s.kidsM[it[2]]={key:it[2],v:{name:it[2],style:it[1],colour:it[2],cat:it[4]},m:{},kidsM:{}});
+    const k=c.kidsM[it[0]]||(c.kidsM[it[0]]={key:it[0],v:{name:"Size "+it[3],style:it[1],colour:it[2],size:it[3],sku:it[0],gtin:it[5],cat:it[4]},m:{}});
+    for(const n of [s,c,k]){const v=n.v;
+      if(r[6]){v.cu=(v.cu||0)+r[4];v.cv=(v.cv||0)+r[5]}if(ok(r)){v.units=(v.units||0)+r[4];v.val=(v.val||0)+r[5];(n.m.o||(n.m.o=new Set())).add(r[7]);
+        if(dayKeys){const dk="d"+r[0];v[dk]=(v[dk]||0)+(valueKey==="val"?r[5]:r[4])}
+        if(perCh){const ck="c"+r[1];v[ck]=(v[ck]||0)+r[4]}}}}
+  const fin=(m)=>Object.values(m).map(n=>{n.v.orders=n.m.o?n.m.o.size:0;n.v.asp=n.v.units?n.v.val/n.v.units:null;if(n.kidsM)n.kids=fin(n.kidsM);delete n.kidsM;delete n.m;return n});
+  return fin(P);
+}
+function totalsOf(rows){const a=agg(rows);return{units:a.units,val:a.val,cu:a.cUnits,cv:a.cVal,orders:a.orders,asp:a.units?a.val/a.units:null}}
+function buildProductTable(id,rows,ch,R){
+  const tot=totalsOf(rows);
+  if(S.pv==="daily"){
+    const days=dayList(R);const mk=S.pm;
+    const tree=prodTree(rows,mk,true);
+    const sumKey=mk==="val"?"val":"units";
+    const cols=[{k:"name",l:"Style / colour / size",f:"t",fixed:true},{k:"cat",l:"Category",f:"t",hide:true},...SKUCOLS,
+      ...days.map(d=>({k:"d"+d,l:fmtD(d),f:mk==="val"?"r":"n"})),{k:sumKey,l:"Total "+(mk==="val"?"value":"units"),f:mk==="val"?"r":"n"}];
+    const total={};days.forEach(d=>{total["d"+d]=rows.filter(r=>ok(r)&&r[0]===d).reduce((s,r)=>s+(mk==="val"?r[5]:r[4]),0)});total[sumKey]=tot[sumKey];
+    T[id]={file:(ch==null?"All":CH[ch])+"_products_by_day",tree:true,rows:tree,cols,total,sort:{k:sumKey,dir:"desc"},
+      xcols:[{k:"style",l:"Style",f:"t"},{k:"colour",l:"Colour",f:"t"},{k:"size",l:"Size",f:"t"},{k:"sku",l:"SKU code",f:"t"},{k:"gtin",l:"GTIN",f:"t"},{k:"cat",l:"Category",f:"t"},...cols.slice(4)],
+      note:basisNote()+" Each date column shows that day's "+(mk==="val"?"value (incl. GST)":"units")+"."};
+  }else{
+    const perCh=ch==null;const tree=prodTree(rows,null,false,perCh);
+    const cols=[{k:"name",l:"Style / colour / size",f:"t",fixed:true},{k:"cat",l:"Category",f:"t",hide:true},...SKUCOLS,
+      ...(perCh?CH.map((c,i)=>({k:"c"+i,l:c+" units",f:"n"})):[]),
+      {k:"units",l:"Units",f:"n"},{k:"val",l:"Value",f:"r"},{k:"orders",l:"Orders",f:"n",hide:true},{k:"asp",l:"Avg price",f:"r"},{k:"share",l:"Share of value",f:"p"},{k:"cu",l:"Cancelled units",f:"n"},{k:"cv",l:"Cancelled value",f:"r",hide:true}];
+    const setShare=ns=>ns.forEach(n=>{n.v.share=tot.val?(n.v.val||0)/tot.val*100:0;if(n.kids)setShare(n.kids)});setShare(tree);
+    const total={...tot,share:100};if(perCh)CH.forEach((c,i)=>total["c"+i]=rows.filter(r=>ok(r)&&r[1]===i).reduce((s,r)=>s+r[4],0));
+    T[id]={file:(ch==null?"All":CH[ch])+"_products",tree:true,rows:tree,cols,total,sort:{k:"val",dir:"desc"},
+      xcols:[{k:"style",l:"Style",f:"t"},{k:"colour",l:"Colour",f:"t"},{k:"size",l:"Size",f:"t"},{k:"sku",l:"SKU code",f:"t"},{k:"gtin",l:"GTIN",f:"t"},{k:"cat",l:"Category",f:"t"},...cols.slice(4)]};
+  }
+  T[id].extraTools=`<div class="seg"><button data-pv="total" aria-pressed="${S.pv==="total"}" type="button">Period total</button><button data-pv="daily" aria-pressed="${S.pv==="daily"}" type="button">Day by day</button></div>${S.pv==="daily"?`<div class="seg"><button data-pm="units" aria-pressed="${S.pm==="units"}" type="button">Units</button><button data-pm="val" aria-pressed="${S.pm==="val"}" type="button">Value</button></div>`:""}`;
+}
+function buildDayTable(id,R,ch){
+  const days=dayList(R);const bd=byDay(D.drop.filter(r=>(ch==null||r[1]===ch)&&r[0]>=R.s&&r[0]<=R.e&&catOk(r)));
+  let cols,rows,total;
+  if(ch==null){
+    cols=[{k:"date",l:"Date",f:"d",fixed:true},...CH.flatMap((c,i)=>[{k:"u"+i,l:c+" units",f:"n"},{k:"v"+i,l:c+" value",f:"r"},{k:"o"+i,l:c+" orders",f:"n",hide:true}]),
+      {k:"units",l:"Total units",f:"n"},{k:"val",l:"Total value",f:"r"},{k:"orders",l:"Total orders",f:"n",hide:true},{k:"cu",l:"Cancelled units",f:"n"},{k:"cv",l:"Cancelled value",f:"r",hide:true}];
+    const row=rs=>{const v={};CH.forEach((c,i)=>{const a=agg(rs.filter(r=>r[1]===i));v["u"+i]=a.units;v["v"+i]=a.val;v["o"+i]=a.orders});const a=agg(rs);Object.assign(v,{units:a.units,val:a.val,orders:a.orders,cu:a.cUnits,cv:a.cVal});return v};
+    rows=days.map(d=>({key:d,v:{date:d,...row(bd[d]||[])}}));total=row(Object.values(bd).flat());
+  }else{
+    cols=[{k:"date",l:"Date",f:"d",fixed:true},{k:"orders",l:"Orders",f:"n"},{k:"units",l:"Units",f:"n"},{k:"val",l:"Value",f:"r"},{k:"asp",l:"Avg price",f:"r"},
+      ...CATS.map(c=>({k:"cat"+c,l:c+" units",f:"n",hide:c==="Accessories"})),{k:"cu",l:"Cancelled units",f:"n"},{k:"cv",l:"Cancelled value",f:"r",hide:true}];
+    const row=rs=>{const a=agg(rs);const v={orders:a.orders,units:a.units,val:a.val,asp:a.units?a.val/a.units:null,cu:a.cUnits,cv:a.cVal};CATS.forEach(c=>v["cat"+c]=rs.filter(r=>ok(r)&&ITEMS[r[3]][4]===c).reduce((s,r)=>s+r[4],0));return v};
+    rows=days.map(d=>({key:d,v:{date:d,...row(bd[d]||[])}}));total=row(Object.values(bd).flat());
+  }
+  T[id]={file:(ch==null?"All":CH[ch])+"_day_by_day",rows,cols,total,sort:{k:"date",dir:"desc"},note:basisNote()};
+}
+
+/* ---------- views ---------- */
+const OTHER=4,OTHER_NAME="Other B2B";
+const chName=ch=>ch==null?"All marketplaces":ch===OTHER?OTHER_NAME:CH[ch];
+const chFile=ch=>ch==null?"All":ch===OTHER?"Other_B2B":CH[ch];
+function lanes(){const tabs=[["overview","All marketplaces",null],...CH.map((c,i)=>[c,c,i]),["Other",OTHER_NAME,OTHER]];
+  $("#lanes").innerHTML=tabs.map(([k,l,i])=>`<button class="lane" role="tab" aria-selected="${S.tab===k}" data-tab="${k}" type="button">${i!==null?`<span class="sw" style="background:${COLORS[i]}"></span>`:""}${l}</button>`).join("")}
+function periodUI(){document.querySelectorAll("#period .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.p===S.p));$("#customBox").hidden=!S.cOpen;if(S.from){$("#dFrom").value=S.from;$("#dTo").value=S.to}const cc=$("#period [data-p=custom]");cc.textContent=S.p==="custom"&&S.from?`Custom · ${fmtD(S.from)} – ${fmtD(S.to)}`:"Custom"}
+const SUBS={drop:"Dropship",sor:"SOR",po:"POs"};
+const ENT=["Myntra Jabong","Flipkart India","Cocoblu Retail","",""];
+const basisHint=()=>S.incC?"Includes cancelled orders":"Net of cancellations";
+const basisNote=()=>S.incC?"Includes cancelled orders. Cancelled units are also shown in their own column.":"Net of cancellations. Cancelled orders are shown in their own columns.";
+function catFilter(){return `<div class="seg" role="group" aria-label="Category">${["All",...CATS].map(c=>`<button data-cat="${c}" aria-pressed="${S.cat===c}" type="button">${c}</button>`).join("")}</div>`}
+function incSeg(){return `<div class="seg" role="group" aria-label="Cancelled orders"><button data-inc="1" aria-pressed="${S.incC}" type="button">Include cancelled</button><button data-inc="0" aria-pressed="${!S.incC}" type="button">Exclude cancelled</button></div>`}
+function save(){try{localStorage.setItem("mpsales2",JSON.stringify({tab:S.tab,p:S.p,sub:S.sub,cols:S.cols,pv:S.pv,pm:S.pm,incC:S.incC,collapsed:S.collapsed,cust:S.cust,hm:S.hm}))}catch(e){}}
+function render(){lanes();periodUI();const R=range();
+  const isOther=S.tab==="Other",isAll=S.tab==="overview";const ch=isAll?null:isOther?OTHER:CH.indexOf(S.tab);
+  const subs=isOther?["po"]:S.tab==="Scapia"?["drop"]:["drop","sor","po"];const sub=subs.includes(S.sub[S.tab])?S.sub[S.tab]:subs[0];
+  const showF=sub==="drop";const b3=$("#bar3");b3.hidden=!showF;
+  b3.innerHTML=showF?`${catFilter()}${incSeg()}<span class="subnote">Both filters apply to every number below. Values include GST.</span>`:"";
+  let h="";
+  if(sub){const notes={drop:"Customer orders the marketplace passes to us to ship",sor:"What they sell from their own warehouse, out of stock we supplied",po:isAll?"What we billed against bulk POs, Myntra + Flipkart + Amazon combined":"What we billed against bulk POs: every Sales Invoice to the listed customers, with or without a Sales Order"};
+    h+=`<div class="sub" role="tablist">${subs.length>1?subs.map(s=>`<button class="subtab" role="tab" data-sub="${s}" aria-selected="${sub===s}" type="button">${SUBS[s]}${s==="sor"?' <span class="muted" style="font-size:11px">soon</span>':""}</button>`).join(""):""}<span class="subnote" style="${subs.length>1?"":"margin-left:0"}">${notes[sub]}</span>${sub==="po"&&ch!=null?`<button class="btn custbtn" type="button" data-custopen="1">Add / view customers <span class="muted">· ${(S.cust[ch]||[]).length}</span></button>`:""}</div>`}
+  if(sub!=="sor")h+=`<div class="rangeline"><h1>${chName(ch)} ${SUBS[sub]} · ${R.label}</h1><span>${fmtD(R.s,{day:"numeric",month:"short",year:"numeric"})}${R.s!==R.e?" – "+fmtD(R.e,{day:"numeric",month:"short",year:"numeric"}):""}${S.p==="today"?" · up to "+ASOF.slice(11):""} · compared with ${R.prev.label}</span></div>`;
+  h+=sub==="sor"?sorSoon(chName(ch)):sub==="po"?poView(R,ch):isAll?overview(R):dropView(R,ch);
+  if(S.custOpen&&sub==="po"&&ch!=null)h+=custPanel(ch);
+  $("#main").innerHTML=h;const ni=$("#newCust");if(ni&&S.custOpen)ni.focus();bindTips($("#main"));save();
+}
+function panel(key,title,hint,right,body){const c=!!S.collapsed[key];
+  return `<div class="panel${c?" collapsed":""}" data-w="${key}"><div class="ph"><button class="wc" type="button" data-wc="${key}" aria-expanded="${!c}" aria-label="${c?"Expand":"Collapse"} ${esc(title)}">${c?"▸":"▾"}</button><h2>${title}</h2>${hint?`<span class="hint">${hint}</span>`:""}${right||""}</div><div class="wb">${body}</div></div>`}
+function tablePanel(id,title,hint,key){return panel(key||id.replace(/_.*/,""),title,hint,tableTools(id),`<div class="tw" id="tb-${id}" style="max-height:560px">${tableHTML(id)}</div>${T[id].note?`<p class="note">${T[id].note}</p>`:""}`)}
+function tiles(a,b,label){
+  const asp=a.units?a.val/a.units:0,aspb=b.units?b.val/b.units:0;const cr=a.netUnits+a.cUnits?a.cUnits/(a.netUnits+a.cUnits)*100:0;
+  return `<div class="tiles">
+  <div class="tile"><div class="k" title="Includes GST">${S.incC?"Sales incl. cancelled":"Net sales"}</div><div class="v">${lakh(a.val)}</div><div class="d">${delta(a.val,b.val,label)}</div></div>
+  <div class="tile"><div class="k">Units</div><div class="v">${num(a.units)}</div><div class="d">${delta(a.units,b.units,label)}</div></div>
+  <div class="tile"><div class="k">Orders</div><div class="v">${num(a.orders)}</div><div class="d">${delta(a.orders,b.orders,label)}</div></div>
+  <div class="tile"><div class="k">Avg selling price</div><div class="v">${a.units?inr(asp):"–"}</div><div class="d">${delta(asp,aspb,label)}</div></div>
+  <div class="tile"><div class="k">Cancelled</div><div class="v">${num(a.cUnits)}<span style="font-size:18px;color:var(--muted)"> units</span></div><div class="d">${lakh(a.cVal)} · ${cr.toFixed(1)}% of units${S.incC?`<br>Net of cancellations: ${lakh(a.netVal)}`:""}</div></div></div>`}
+function trendSeg(){return `<div class="right"><div class="seg"><button data-tm="val" aria-pressed="${S.tm==="val"}" type="button">Value</button><button data-tm="units" aria-pressed="${S.tm==="units"}" type="button">Units</button><button data-tm="orders" aria-pressed="${S.tm==="orders"}" type="button">Orders</button></div></div>`}
+const fmtM=()=>S.tm==="val"?(v,ax)=>ax?lakh(v).replace("₹",""):inr(v):v=>num(v);
+const shortM=()=>S.tm==="val"?v=>v>=1e7?(v/1e7).toFixed(1)+"Cr":v>=1e5?(v/1e5).toFixed(1)+"L":v>=1e3?(v/1e3).toFixed(1)+"K":String(Math.round(v)):v=>v>=1e4?(v/1e3).toFixed(1)+"K":num(v);
+function chartDays(R){return dayList(R.s===R.e?{s:addDays(R.e,-13),e:R.e}:R)}
+function overview(R){
+  const all=dropRows(R),prev=dropRows(R.prev);const a=agg(all),b=agg(prev);
+  let h=tiles(a,b,R.prev.label);
+  h+=`<div class="chcards">`+CH.map((c,i)=>{const x=agg(all.filter(r=>r[1]===i)),y=agg(prev.filter(r=>r[1]===i));const share=a.val?x.val/a.val*100:0;const sp=poTotals(R,i);
+    return `<button class="chcard" data-go="${c}" type="button"><div class="nm"><span class="sw" style="background:${COLORS[i]}"></span>${c}<small>${share.toFixed(0)}% of dropship</small></div><div class="big">${lakh(x.val)}</div><div class="meta"><span>${num(x.units)} units</span><span>${num(x.orders)} orders</span><span>${delta(x.val,y.val,"prior")}</span></div>${c!=="Scapia"?`<div class="meta"><span>PO billing: <b style="color:var(--ink)">${sp.n?lakh(sp.val)+" · "+sp.n+" invoice"+(sp.n>1?"s":""):"none"}</b></span></div>`:""}</button>`}).join("")+`</div>`;
+  const days=chartDays(R);const bd=byDay(D.drop.filter(r=>r[0]>=days[0]&&r[0]<=days[days.length-1]&&catOk(r)));
+  const ser=CH.map((_,i)=>days.map(d=>agg((bd[d]||[]).filter(r=>r[1]===i))[S.tm]));
+  h+=hourPanel(R,null);
+  h+=`<div class="grid2">${panel("trend","Daily trend",R.s===R.e?"Last 14 days":"",trendSeg(),
+    `<div class="legend">${CH.map((c,i)=>`<span><i class="sw" style="background:${COLORS[i]}"></i>${c}</span>`).join("")}</div>${stackedBars(days,ser,COLORS,fmtM(),CH,shortM())}`)}${panel("cat","Category mix","Share of value","",catBody(R,null))}</div>`;
+  buildDayTable("day_all",R,null);h+=tablePanel("day_all","Day by day",basisHint());
+  buildProductTable("prod_all",all,null,R);h+=tablePanel("prod_all","Products",S.pv==="daily"?"Day-on-day, click a style for colours and sizes":"Click a style for colours, a colour for sizes");
+  return h;
+}
+function dropView(R,ch){
+  const rows=dropRows(R,ch),prev=dropRows(R.prev,ch);const a=agg(rows),b=agg(prev);
+  let h=tiles(a,b,R.prev.label);
+  const days=chartDays(R);const bd=byDay(D.drop.filter(r=>r[1]===ch&&r[0]>=days[0]&&r[0]<=days[days.length-1]&&catOk(r)));
+  const ser=days.map(d=>agg(bd[d]||[])[S.tm]);
+  h+=hourPanel(R,ch);
+  h+=`<div class="grid2">${panel("trend","Daily trend",R.s===R.e?"Last 14 days":"",trendSeg(),stackedBars(days,[ser],[COLORS[ch]],fmtM(),[CH[ch]],shortM()))}${panel("cat","Category mix","Share of value","",catBody(R,ch))}</div>`;
+  buildDayTable("day_"+ch,R,ch);
+  h+=tablePanel("day_"+ch,"Day by day",basisHint());
+  buildProductTable("prod_"+ch,rows,ch,R);h+=tablePanel("prod_"+ch,"Products",S.pv==="daily"?"Day-on-day, click a style for colours and sizes":"Click a style for colours, a colour for sizes");
+  return h;
+}
+/* ---------- hour by hour: running total vs usual, with projection ---------- */
+function hr(h){const f=x=>x===0||x===24?12:x>12?x-12:x;const e=h+1;const suf=e<12||e===24?"am":"pm";return `${f(h)}–${f(e)}${suf}`}
+function hourPanel(R,ch){
+  let days=dayList(R);const single=days.length===1;if(!single){const done=days.filter(d=>d<ASOF_D);days=done.length?done:[ASOF_D]}
+  const isToday=single&&days[0]===ASOF_D;const upto=isToday?ASOF_H:23;const frac=isToday?(+ASOF.slice(14,16))/60:1;const nowX=isToday?ASOF_H+frac:24;
+  const base=[];for(let k=1;k<=30;k++)base.push(addDays(days[0],-k));
+  const Z=()=>new Array(24).fill(0);const U={},V={};const want=new Set([...days,...base]);
+  for(const r of D.drop)if((ch==null||r[1]===ch)&&want.has(r[0])&&ok(r)&&catOk(r)){(U[r[0]]||(U[r[0]]=Z()))[r[2]]+=r[4];(V[r[0]]||(V[r[0]]=Z()))[r[2]]+=r[5]}
+  const mean=(M,ds)=>{const a=Z();ds.forEach(d=>(M[d]||Z()).forEach((v,i)=>a[i]+=v/ds.length));return a};
+  const cum=a=>{const c=[0];a.forEach(v=>c.push(c[c.length-1]+v));return c};
+  const stat=M=>{const cur=mean(M,days),avg=mean(M,base),cc=cum(cur),ca=cum(avg);const sofar=cc[upto+1],avgTotal=ca[24],usualByNow=ca[upto]+avg[upto]*frac;let proj=null,lo=null,hi=null;
+    if(isToday&&sofar>0){const sh=base.map(d=>M[d]||Z()).map(a=>{const t=a.reduce((s,x)=>s+x,0);if(!t)return null;let c=0;for(let i=0;i<upto;i++)c+=a[i];return (c+a[upto]*frac)/t}).filter(x=>x>0).sort((a,b)=>a-b);
+      if(sh.length>=5){const q=p=>sh[Math.min(sh.length-1,Math.floor(p*(sh.length-1)))];proj=sofar/q(.5);lo=sofar/q(.75);hi=sofar/q(.25)}}
+    return {cur,avg,cc,ca,sofar,avgTotal,usualByNow,proj,lo,hi}};
+  const su=stat(U),sv=stat(V);const isV=S.hm==="val";const st=isV?sv:su,ot=isV?su:sv;
+  const {cur,avg,cc,ca,sofar,avgTotal,usualByNow,proj,lo,hi}=st;
+  // formatters: u = units, m = money (short), f = the chart's metric
+  const sm=v=>{v=Math.abs(v);return v>=1e7?(v/1e7).toFixed(1)+"Cr":v>=1e5?(v/1e5).toFixed(1)+"L":v>=1e3?(v/1e3).toFixed(1)+"K":String(Math.round(v))};
+  const m=v=>"₹"+sm(v);const u=v=>single||Number.isInteger(v)?num(v):v.toFixed(1);const ur=v=>num(v);
+  const f=isV?m:u,fr=isV?m:ur,o=isV?ur:m,unitW=v=>isV?f(v):f(v)+" units";
+  const both=(uv,vv,dec)=>`${dec?u(uv):ur(uv)} units · ${m(vv)}`;
+  const lab=isToday?"Today":single?fmtD(days[0]):"Avg day, "+fmtD(days[0])+(days.length>1?"–"+fmtD(days[days.length-1]):"");
+  const vsNow=pct(sofar,isToday?usualByNow:avgTotal);const vsS=vsNow===null?"":`<span class="${vsNow>=0?"up":"down"}">${vsNow>=0?"+":""}${vsNow.toFixed(0)}%</span> vs usual (${f(isToday?usualByNow:avgTotal)})`;
+  const peakA=avg.indexOf(Math.max(...avg));
+  const kp=isToday?`<div class="hk"><div><div class="k">So far, by ${ASOF.slice(11)}</div><div class="v">${f(sofar)}</div><div class="d">${isV?ur(ot.sofar)+" units":m(ot.sofar)} · ${vsS}</div></div>
+    <div><div class="k">Projected close</div><div class="v">${proj?"~"+fr(proj):"–"}</div><div class="d">${proj?`likely ${fr(lo)}–${fr(hi)}${ot.proj?` · ~${o(ot.proj)}${isV?" units":""}`:""}`:"Not enough sales yet to project"}</div></div>
+    <div><div class="k">Average full day</div><div class="v">${fr(avgTotal)}</div><div class="d">${o(ot.avgTotal)}${isV?" units":""} · last 30 days · busiest ${hr(peakA)}</div></div></div>`
+   :`<div class="hk"><div><div class="k">${single?"Day total":"Average day in period"}</div><div class="v">${f(sofar)}</div><div class="d">${isV?u(ot.sofar)+" units":m(ot.sofar)}${vsS?" · "+vsS:""}</div></div>
+    <div><div class="k">Average day before</div>${avgTotal?`<div class="v">${fr(avgTotal)}</div><div class="d">${o(ot.avgTotal)}${isV?" units":""} · 30 days before ${fmtD(days[0])}</div>`:`<div class="v">–</div><div class="d">No sales in the 30 days before ${fmtD(days[0])}</div>`}</div>
+    <div><div class="k">Busiest hour</div><div class="v" style="font-size:24px">${hr(cur.indexOf(Math.max(...cur)))}</div><div class="d">usually ${hr(peakA)}</div></div></div>`;
+  // chart
+  const W=760,H=270,L=isV?50:40,B=26,T_=14,Rr=82;const mx=niceTicks(Math.max(4,avgTotal,cc[24],hi||0)*1.04);
+  const x=h=>L+(W-L-Rr)*h/24,y=v=>T_+(H-T_-B)*(1-v/mx);
+  let g="";for(let k=0;k<=4;k++){const v=mx*k/4;g+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${isV?(!v?"0":mx>=1e5?(v/1e5).toFixed(1)+"L":sm(v)):num(v)}</text>`}
+  for(const h of [0,3,6,9,12,15,18,21,24])g+=`<text x="${x(h)}" y="${H-7}" text-anchor="middle">${h===24?"12am":hl(h)==="midnight"?"12am":hl(h)==="noon"?"12pm":hl(h)}</text>`;
+  let bands="";const col=ch==null?"var(--s1)":COLORS[ch];
+  for(let h=0;h<24;h++){const fut=h>upto,part=isToday&&h===upto;
+    const t=`<b>${hr(h)}${part?" (so far)":""}</b><br>${fut?`Still to come<br>Usual this hour: ${both(su.avg[h],sv.avg[h],true)}<br>Usual running total: ${both(su.ca[h+1],sv.ca[h+1])}`:`Sold this hour: <b>${both(su.cur[h],sv.cur[h],true)}</b><br>Usual this hour: ${both(su.avg[h],sv.avg[h],true)}<br>Running total: ${both(su.cc[h+1],sv.cc[h+1],true)}<br>Usual running total: ${both(su.ca[h+1],sv.ca[h+1])}`}`;
+    bands+=`<rect class="hb" x="${x(h)}" y="${T_}" width="${x(h+1)-x(h)}" height="${H-T_-B}" data-tip="${esc(t)}"/>`}
+  const path=pts=>pts.map((p,i)=>(i?"L":"M")+x(p[0]).toFixed(1)+","+y(p[1]).toFixed(1)).join("");
+  const avgPts=ca.map((v,i)=>[i,v]);const curPts=[];for(let i=0;i<=upto;i++)curPts.push([i,cc[i]]);curPts.push([nowX,sofar]);
+  let mk=avgTotal?`<path d="${path(avgPts)}" fill="none" stroke="var(--faint)" stroke-width="2" stroke-dasharray="5 4"/>`:"";
+  if(proj){mk+=`<path d="M${x(nowX)},${y(sofar)}L${x(24)},${y(hi)}L${x(24)},${y(lo)}Z" fill="${col}" opacity=".14"/><line x1="${x(nowX)}" y1="${y(sofar)}" x2="${x(24)}" y2="${y(proj)}" stroke="${col}" stroke-width="2" stroke-dasharray="2 4"/>`}
+  mk+=`<path d="${path(curPts)}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="${x(nowX)}" cy="${y(sofar)}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="2"/>`;
+  if(isToday)mk+=`<text x="${x(nowX)-8}" y="${y(sofar)-10}" text-anchor="end" style="fill:var(--ink);font-weight:600">${fr(sofar)} now</text>`;
+  let ly1=proj?y(proj):y(cc[24]),ly2=y(avgTotal);if(Math.abs(ly1-ly2)<15){if(ly1<ly2){ly1-=7;ly2+=8}else{ly1+=8;ly2-=7}}
+  mk+=proj?`<text x="${x(24)+6}" y="${ly1+4}" style="fill:var(--ink);font-weight:600">~${fr(proj)}</text>`:(!isToday?`<text x="${x(24)+6}" y="${ly1+4}" style="fill:var(--ink);font-weight:600">${f(cc[24])}</text>`:"");
+  if(avgTotal)mk+=`<text x="${x(24)+6}" y="${ly2+4}">avg ${fr(avgTotal)}</text>`;
+  const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Running total of ${isV?"sales value":"units"} by hour against the average day">${bands}${g}<line x1="${L}" x2="${W-Rr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)"/><g style="pointer-events:none">${mk}</g></svg>`;
+  const legend=`<div class="legend"><span><i style="display:inline-block;width:16px;border-top:2.5px solid ${col}"></i>${lab}</span><span><i style="display:inline-block;width:16px;border-top:2px dashed var(--faint)"></i>Average day</span>${proj?`<span><i class="sw" style="background:${col};opacity:.25"></i>Projection, likely range</span>`:""}<span class="muted">Hover for each hour's units and value</span></div>`;
+  // hourly table: units and value
+  const id="hour_"+(ch==null?"all":ch);const dec=single?"n":"n1";
+  const rows=[];for(let h=0;h<24;h++){const fut=h>upto,part=isToday&&h===upto;
+    rows.push({key:"h"+h,v:{h,hour:hr(h)+(part?" (so far)":""),u:fut?null:su.cur[h],val:fut?null:sv.cur[h],a:su.avg[h],av:sv.avg[h],d:fut?null:su.cur[h]-su.avg[h],dv:fut?null:sv.cur[h]-sv.avg[h],cu:fut?null:su.cc[h+1],cv:fut?null:sv.cc[h+1],ca:su.ca[h+1],cav:sv.ca[h+1]}})}
+  const seg=`<div class="seg" role="group" aria-label="Chart measure"><button data-hm="units" aria-pressed="${!isV}" type="button">Units</button><button data-hm="val" aria-pressed="${isV}" type="button">Value</button></div>`;
+  T[id]={file:chFile(ch)+"_hourly",rows,sort:{k:"h",dir:"asc"},extraTools:seg,
+    cols:[{k:"hour",l:"Hour",f:"t",fixed:true,sk:"h"},{k:"u",l:single?"Units":"Units (avg day)",f:dec},{k:"val",l:single?"Value":"Value (avg day)",f:"r"},{k:"a",l:"Usual units",f:"n1",hide:true},{k:"av",l:"Usual value",f:"r",hide:true},{k:"d",l:"Units vs usual",f:"sd"},{k:"dv",l:"Value vs usual",f:"r",hide:true},{k:"cu",l:"Running units",f:dec,hide:true},{k:"cv",l:"Running value",f:"r"},{k:"ca",l:"Usual running units",f:"n1",hide:true},{k:"cav",l:"Usual running value",f:"r",hide:true}],
+    total:{u:su.sofar,val:sv.sofar,a:su.avgTotal,av:sv.avgTotal,d:su.sofar-(isToday?su.usualByNow:su.avgTotal),dv:sv.sofar-(isToday?sv.usualByNow:sv.avgTotal),cu:su.sofar,cv:sv.sofar,ca:su.avgTotal,cav:sv.avgTotal}};
+  return panel("hour","Hour by hour",`${lab} vs the average day · ${isV?"value incl. GST":"units"} · ${basisHint().toLowerCase()}`,tableTools(id),
+    `${kp}<div class="hourgrid"><div style="min-width:0">${legend}${svg}</div><div class="tw" id="tb-${id}" style="max-height:330px;min-width:0">${tableHTML(id)}</div></div>`);
+}
+function catBody(R,ch){
+  const rows=D.drop.filter(r=>(ch==null||r[1]===ch)&&inR(r,R)&&ok(r));const t={};CATS.forEach(c=>t[c]={u:0,v:0});
+  rows.forEach(r=>{const c=ITEMS[r[3]][4];t[c].u+=r[4];t[c].v+=r[5]});const tv=CATS.reduce((s,c)=>s+t[c].v,0)||1;const cc={Footwear:"var(--s1)",Apparel:"var(--s2)",Accessories:"var(--s3)"};
+  return `<div class="track" style="height:18px;margin-bottom:12px">${CATS.map(c=>t[c].v?`<i style="width:${t[c].v/tv*100}%;background:${cc[c]};border-right:2px solid var(--surface)" data-tip="${esc(`<b>${c}</b><br>${num(t[c].u)} units · ${inr(t[c].v)}`)}"></i>`:"").join("")}</div>
+  <div class="cat">${CATS.map(c=>`<div class="catrow"><span style="display:flex;gap:7px;align-items:center"><i class="sw" style="background:${cc[c]}"></i>${c}</span><span class="muted">${num(t[c].u)} units · ${(t[c].v/tv*100).toFixed(0)}%</span><span style="text-align:right">${lakh(t[c].v)}</span></div>`).join("")}</div>
+  <p class="note">Split by HSN code: 64xx footwear, 61–63xx apparel, everything else accessories. Ignores the category filter.</p>`;
+}
+function sizeBody(rows){
+  const m={};rows.forEach(r=>{if(!ok(r))return;const it=ITEMS[r[3]];if(it[4]!=="Footwear")return;m[it[3]]=(m[it[3]]||0)+r[4]});
+  const ks=Object.keys(m).sort((a,b)=>parseFloat(a)-parseFloat(b)||a.localeCompare(b));if(!ks.length)return "";const mx=Math.max(...ks.map(k=>m[k]));const tot=ks.reduce((s,k)=>s+m[k],0);
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:130px">${ks.map(k=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end" data-tip="${esc(`<b>UK ${k}</b><br>${num(m[k])} units · ${(m[k]/tot*100).toFixed(0)}%`)}"><span style="font-size:11px;color:var(--muted)">${num(m[k])}</span><div style="width:100%;max-width:34px;background:var(--s1);border-radius:4px 4px 0 0;height:${Math.max(2,m[k]/mx*84)}px"></div><span style="font-size:11.5px">${esc(k)}</span></div>`).join("")}</div>`;
+}
+function sorSoon(mkt){return `<div class="panel soon"><span class="tag">Coming soon</span><h2>${mkt} SOR sell-through</h2><p>This tab will show what ${mkt} sells to customers from its own warehouse, out of the stock we supplied against POs: units sold by day, sell-through % and what's left on hand, down to style, colour and size.</p><p>Purchase orders we've serviced are in the POs tab.</p><button class="subtab" data-sub="po" type="button">Go to POs</button></div>`}
+/* ---------- POs ---------- */
+// po: [date, ch, erpName, customer, status, poNo, units, value, perDelivered, perBilled]
+const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+const custOf=(p,ch)=>(S.cust[ch]||[]).find(n=>norm(p[3]).includes(norm(n)));
+const MK=[0,1,2];const mkOf=p=>MK.find(c=>custOf(p,c));
+const poIn=(p,ch)=>ch==null?mkOf(p)!==undefined:!!custOf(p,ch);
+const curCh=()=>S.tab==="Other"?OTHER:CH.indexOf(S.tab);
+const poCount=n=>D.po.filter(p=>norm(p[3]).includes(norm(n))).length;
+function poRows(R,ch){return D.po.map((p,i)=>({p,i})).filter(({p})=>poIn(p,ch)&&p[0]>=R.s&&p[0]<=R.e)}
+function poTotals(R,ch){const r=poRows(R,ch);return{n:r.length,val:r.reduce((s,x)=>s+x.p[7],0)}}
+const entity=c=>c.replace(/ PRIVATE LIMITED| Private Limited| Pvt\.? Ltd\.?| RETAIL LIMITED/i,"");
+function custPanel(ch){
+  const names=[...new Set(D.po.map(p=>p[3].replace(/\s*[-–]\s*(Billing\s*-?\s*)?\d+\s*$/i,"").replace(/\t.*$/,"").trim()))].filter(n=>!/^\*+$/.test(n)).sort();
+  const list=S.cust[ch]||[];const ex=ch===OTHER?"Reliance Retail":ch===2?"Cocoblu":ch===1?"Flipkart India":"Myntra Jabong";
+  const chips=list.map(n=>{const k=poCount(n);return `<span class="cchip">${esc(n)} <span class="muted">${k} invoice${k===1?"":"s"} since 1 Apr</span><button type="button" data-rmc="${esc(n)}" aria-label="Stop counting ${esc(n)}">×</button></span>`}).join("")||`<span class="muted">No customers yet. Add the ERP customer name these POs are billed to.</span>`;
+  return `<div class="modal-bg" data-custclose="1"></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="cmT"><h2 id="cmT">${ch===OTHER?"Customers tracked":`Customers counted as ${CH[ch]} POs`}</h2><p class="muted" style="margin:2px 0 14px;font-size:13px">Invoices to any ERP customer whose name contains one of these names are counted.</p><div class="chips">${chips}</div><div class="addc"><label for="newCust" class="muted" style="font-size:12.5px">Add a customer</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="newCust" list="custList" placeholder="${ex}" autocomplete="off"><button class="btn" type="button" data-addc="1">Add customer</button></div><span id="custErr" class="err" hidden></span><datalist id="custList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+    <p class="note">One name covers every billing entity that contains it: "Cocoblu" matches Cocoblu Retail Limited - 20, - 21 and - 22. On the live site this list is shared with everyone and new names are pulled from the ERP when you add them. In this preview it's saved in your browser only.</p><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" type="button" data-custclose="1">Done</button></div></div>`;
+}
+function poView(R,ch){
+  // po: [invoiceDate, -, invoiceNo, customer, status, marketplacePO, units, value, salesOrders, -]
+  const cur=poRows(R,ch),prev=poRows(R.prev,ch);
+  const sum=a=>a.reduce((s,{p})=>({n:s.n+1,u:s.u+p[6],v:s.v+p[7]}),{n:0,u:0,v:0});
+  const a=sum(cur),b=sum(prev);
+  let h="";
+  h+=`<div class="tiles">
+  <div class="tile" title="Grand total of the Sales Invoices raised to these customers, with or without a Sales Order"><div class="k">Billed (incl. GST)</div><div class="v">${lakh(a.v)}</div><div class="d">${delta(a.v,b.v,R.prev.label)}</div></div>
+  <div class="tile"><div class="k">Units billed</div><div class="v">${num(a.u)}</div><div class="d">${delta(a.u,b.u,R.prev.label)}</div></div></div>`;
+  if(!cur.length){const last=D.po.filter(p=>poIn(p,ch)).sort((x,y)=>y[0]<x[0]?-1:1)[0];
+    h+=`<div class="panel"><div class="empty">No invoices to the listed customers between ${fmtD(R.s)} and ${fmtD(R.e)}.${last?` The latest is ${esc(last[2])} on ${fmtD(last[0],{day:"numeric",month:"short"})} (${esc(last[3])}).`:""} If these are billed under another customer name, add it with Add / view customers.</div></div>`;return h}
+  {const g={};cur.forEach(({p})=>{const n=ch==null?CH[mkOf(p)]:custOf(p,ch);const o=g[n]||(g[n]={key:n,v:{cust:n,n:0,units:0,val:0}});o.v.n++;o.v.units+=p[6];o.v.val+=p[7]});
+    T["custsum_"+ch]={file:chFile(ch)+"_billing_by_customer",rows:Object.values(g),sort:{k:"val",dir:"desc"},cols:[{k:"cust",l:ch==null?"Marketplace":"Customer",f:"t",fixed:true},{k:"n",l:"Invoices",f:"n"},{k:"units",l:"Units",f:"n"},{k:"val",l:"Billed",f:"r"}],total:{n:a.n,units:a.u,val:a.v}};
+    h+=tablePanel("custsum_"+ch,ch==null?"By marketplace":"By customer","Billed in the selected period","custsum")}
+  const id="po_"+ch;
+  T[id]={file:chFile(ch)+"_PO_invoices",sort:{k:"date",dir:"desc"},
+    cols:[{k:"date",l:"Invoice date",f:"d",fixed:true},{k:"inv",l:"Invoice",f:"code"},{k:"pono",l:ch===OTHER?"Customer PO":"Marketplace PO",f:"t"},{k:"ent",l:"Billing entity",f:"t"},{k:"units",l:"Units",f:"n"},{k:"val",l:"Billed",f:"r"},{k:"so",l:"Sales order",f:"t",hide:true},{k:"status",l:"Payment status",f:"t",hide:true}],
+    rows:cur.map(({p})=>({key:p[2],v:{date:p[0],inv:p[2],pono:p[5]||"–",ent:entity(p[3]),units:p[6],val:p[7],so:p[8]||"none",status:p[4]}})),
+    total:{units:a.u,val:a.v},
+    note:"One row per Sales Invoice, including invoices raised without a Sales Order. Value includes GST. Credit notes (returns) are not deducted."};
+  h+=tablePanel(id,"Invoices","Billed in the selected period");
+  const idx=new Set(cur.map(x=>x.i));const lines=D.poLines.filter(l=>idx.has(l[0]));
+  const fake=lines.map(l=>[D.po[l[0]][0],ch,0,l[1],l[2],l[3],0,l[0]]);
+  const tree=prodTree(fake);const pid="poprod_"+ch;
+  T[pid]={file:chFile(ch)+"_PO_products",tree:true,rows:tree,sort:{k:"val",dir:"desc"},
+    cols:[{k:"name",l:"Style / colour / size",f:"t",fixed:true},{k:"cat",l:"Category",f:"t",hide:true},...SKUCOLS,{k:"units",l:"Units",f:"n"},{k:"val",l:"Billed",f:"r"},{k:"orders",l:"Invoices",f:"n"}],
+    xcols:[{k:"style",l:"Style",f:"t"},{k:"colour",l:"Colour",f:"t"},{k:"size",l:"Size",f:"t"},{k:"sku",l:"SKU code",f:"t"},{k:"gtin",l:"GTIN",f:"t"},{k:"cat",l:"Category",f:"t"},{k:"units",l:"Units",f:"n"},{k:"val",l:"Billed",f:"r"},{k:"orders",l:"Invoices",f:"n"}],
+    total:{units:a.u,val:a.v,orders:a.n}};
+  h+=tablePanel(pid,"What we billed","Click a style for colours, a colour for sizes");
+  return h;
+}
+function addCustomer(){const inp=$("#newCust"),err=$("#custErr");const v=(inp.value||"").trim();
+  const fail=m=>{err.textContent=m;err.hidden=false;inp.focus()};
+  if(!v)return fail("Type a customer name first.");
+  const ch=curCh();const list=S.cust[ch]||(S.cust[ch]=[]);if(list.some(n=>norm(n)===norm(v)))return fail(`${v} is already in this list.`);
+  const k=poCount(v);
+  list.push(v);render();toast(k?`Added ${v}: ${k} invoices since 1 Apr`:`Added ${v}. No invoices under this name since 1 Apr yet.`)}
+
+/* ---------- events (delegated) ---------- */
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-tab],[data-sub],[data-go],[data-cat],[data-inc],[data-tm],[data-pv],[data-pm],[data-tg],th[data-sk],[data-exp],[data-wc],[data-rmc],[data-addc],[data-hm],[data-custopen],[data-custclose]");if(!el)return;
+  const d=el.dataset;
+  if(d.tab){S.tab=d.tab;S.cat="All";S.custOpen=false;render();return}
+  if(d.custopen){S.custOpen=true;render();return}
+  if(d.custclose){S.custOpen=false;render();return}
+  if(d.go){S.tab=d.go;S.cat="All";render();scrollTo({top:0});return}
+  if(d.sub){S.sub[S.tab]=d.sub;S.custOpen=false;render();return}
+  if(d.cat){S.cat=d.cat;render();return}
+  if(d.inc!==undefined){S.incC=d.inc==="1";render();return}
+  if(d.tm){S.tm=d.tm;render();return}
+  if(d.pv){S.pv=d.pv;render();return}
+  if(d.pm){S.pm=d.pm;render();return}
+  if(d.wc){const c=!S.collapsed[d.wc];if(c)S.collapsed[d.wc]=1;else delete S.collapsed[d.wc];document.querySelectorAll(`.panel[data-w="${d.wc}"]`).forEach(p=>{p.classList.toggle("collapsed",c);const b=p.querySelector("[data-wc]");b.textContent=c?"▸":"▾";b.setAttribute("aria-expanded",!c)});save();return}
+  if(d.rmc){const ch=curCh();S.cust[ch]=(S.cust[ch]||[]).filter(n=>n!==d.rmc);render();toast(`Removed ${d.rmc}`);return}
+  if(d.hm){S.hm=d.hm;render();return}
+  if(d.addc){addCustomer();return}
+  if(d.tg){const o=S.open[d.t];o.has(d.tg)?o.delete(d.tg):o.add(d.tg);refreshTable(d.t);return}
+  if(d.sk){const cur=S.sort[d.t]||T[d.t].sort||{};const c=T[d.t].cols.find(x=>x.k===d.sk);S.sort[d.t]={k:d.sk,dir:cur.k===d.sk?(cur.dir==="asc"?"desc":"asc"):(c.f==="t"||c.f==="code"?"asc":"desc")};refreshTable(d.t);return}
+  if(d.exp){el.closest("details").open=false;doExport(d.t,d.exp)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(S.custOpen){S.custOpen=false;render()}else if(S.cOpen){S.cOpen=false;periodUI()}}if(e.key==="Enter"&&e.target.id==="newCust"){e.preventDefault();addCustomer()}});
+document.addEventListener("input",e=>{if(e.target.id==="newCust"){const er=$("#custErr");if(er)er.hidden=true}});
+document.addEventListener("change",e=>{const el=e.target;if(el.dataset&&el.dataset.col){const id=el.dataset.t;(S.cols[id]||(S.cols[id]={}))[el.dataset.col]=!el.checked;refreshTable(id);save()}});
+document.addEventListener("click",e=>{document.querySelectorAll("details.picker[open]").forEach(dt=>{if(!dt.contains(e.target))dt.open=false})},true);
+document.querySelectorAll("#period .chip").forEach(c=>c.onclick=()=>{S.p=c.dataset.p;S.cOpen=S.p==="custom";if(S.p==="custom"&&!S.from){S.from=addDays(ASOF_D,-13);S.to=ASOF_D;$("#dFrom").value=S.from;$("#dTo").value=S.to}render()});
+["#dFrom","#dTo"].forEach(id=>$(id).addEventListener("change",()=>{const f=$("#dFrom").value,t=$("#dTo").value;if(f&&t&&f<=t){S.from=f;S.to=t;render()}}));
+$("#refresh").onclick=()=>load(true);
+const effTheme=()=>document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+function themeBtn(){const d=effTheme()==="dark";const b=$("#theme");b.textContent=d?"☀ Light":"☾ Dark";b.setAttribute("aria-label",d?"Switch to light theme":"Switch to dark theme")}
+try{const t=localStorage.getItem("mpsales2-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}
+$("#theme").onclick=()=>{const t=effTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("mpsales2-theme",t)}catch(e){}themeBtn()};
+themeBtn();
+async function load(force){
+  $("#asof").textContent="Refreshing…";
+  try{const r=await fetch("data.json"+(force?"?t="+Date.now():""));if(!r.ok)throw 0;D=await r.json()}catch(e){$("#main").innerHTML=`<div class="empty">Couldn't load sales data. Check your connection and press Refresh.</div>`;$("#asof").textContent="Not loaded";return}
+  CH=D.channels;ITEMS=D.items;ASOF=D.asof;ASOF_D=ASOF.slice(0,10);ASOF_H=+ASOF.slice(11,13);FIRST_D=D.drop.reduce((m,r)=>r[0]<m?r[0]:m,"9999");
+  $("#dFrom").min=$("#dTo").min="2026-04-01";$("#cDone").onclick=()=>{S.cOpen=false;periodUI()};$("#dFrom").max=$("#dTo").max=ASOF_D;
+  $("#asof").textContent="ERP data as of "+fmtD(ASOF_D)+", "+ASOF.slice(11);
+  if(!force){try{const s=JSON.parse(localStorage.getItem("mpsales2")||"null");if(s){S.tab=s.tab||S.tab;S.p=s.p==="custom"?"mtd":(s.p||S.p);S.sub=s.sub||{};S.cols=s.cols||{};S.pv=s.pv||"total";S.pm=s.pm||"units";if(typeof s.incC==="boolean")S.incC=s.incC;S.collapsed=s.collapsed||{};if(s.cust&&typeof s.cust==="object")S.cust=Object.assign(S.cust,s.cust);else if(Array.isArray(s.others))S.cust[4]=s.others;if(s.hm)S.hm=s.hm}}catch(e){}}
+  render();
+}
+load();
+</script>

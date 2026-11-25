@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Ten x You Marketplace Sales</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#080b11; --ink:#eef1f6; --muted:#9aa3b2; --line:#232a36; --card:#111621; --field:#0b0f17;
+  --s1:#3987e5; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --bad:#ef6b62;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif; --body:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;overflow-x:hidden}
+.page{min-height:100%;display:grid;grid-template-columns:1.25fr 1fr}
+@media (max-width:900px){.page{grid-template-columns:1fr}.hero{min-height:420px}}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:40px 48px;display:flex;flex-direction:column;justify-content:space-between;isolation:isolate}
+@media (max-width:600px){.hero{padding:28px 16px}}
+.blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;z-index:-2;animation:drift 18s ease-in-out infinite alternate}
+.b1{width:420px;height:420px;background:var(--s1);top:-120px;left:-80px}
+.b2{width:360px;height:360px;background:var(--s2);bottom:-120px;left:30%;animation-delay:-6s}
+.b3{width:300px;height:300px;background:var(--s3);top:20%;right:-80px;animation-delay:-12s}
+.b4{width:220px;height:220px;background:var(--s4);top:55%;left:-60px;opacity:.35;animation-delay:-3s}
+@keyframes drift{to{transform:translate(60px,40px) scale(1.12)}}
+.grid{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 40% 50%,#000 30%,transparent 75%)}
+.brand{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--muted);font-weight:600}
+.lede h1{font-family:var(--display);font-weight:800;font-size:clamp(44px,6vw,84px);line-height:.92;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.lede h1 em{font-style:normal;background:linear-gradient(90deg,var(--s1),var(--s3),var(--s4),var(--s2));-webkit-background-clip:text;background-clip:text;color:transparent;background-size:300% 100%;animation:sheen 8s linear infinite}
+@keyframes sheen{to{background-position:300% 0}}
+.lede p{color:var(--muted);max-width:440px;margin:14px 0 0;line-height:1.5}
+.stage{position:relative;margin:24px 0;height:300px}
+.stage svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 3.2s cubic-bezier(.6,.1,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fillin{opacity:0;animation:fade 1.2s 2.2s forwards}
+@keyframes fade{to{opacity:1}}
+.bar{transform-origin:bottom;transform-box:fill-box;transform:scaleY(0);animation:grow 1s cubic-bezier(.3,1.4,.5,1) forwards}
+@keyframes grow{to{transform:scaleY(1)}}
+.pulse{animation:pulse 2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(3.2);opacity:0}}
+.chip{position:absolute;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(17,22,33,.72);border:1px solid rgba(255,255,255,.09);backdrop-filter:blur(8px);font-size:12.5px;white-space:nowrap;animation:float 6s ease-in-out infinite}
+.chip i{width:8px;height:8px;border-radius:2px;display:inline-block}
+@keyframes float{50%{transform:translateY(-10px)}}
+.tags{display:flex;gap:10px;flex-wrap:wrap}
+.tag{display:flex;align-items:center;gap:7px;font-family:var(--display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:15px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.tag i{width:9px;height:9px;border-radius:2px}
+
+/* ---------- sign-in card ---------- */
+.side{display:grid;place-items:center;padding:40px 24px;background:linear-gradient(180deg,#0c1018,#080b11);border-left:1px solid var(--line)}
+@media (max-width:900px){.side{border-left:0;border-top:1px solid var(--line)}}
+.card{width:min(400px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.card h2{font-family:var(--display);font-weight:700;font-size:30px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.03em}
+.card p{color:var(--muted);margin:0 0 24px;font-size:14px}
+label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.field{position:relative}
+input{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px 74px 12px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:var(--s1);box-shadow:0 0 0 4px rgba(57,135,229,.2)}
+.show{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;padding:6px 10px;border-radius:6px;cursor:pointer}
+.show:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+.go{margin-top:16px;width:100%;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:600;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--s1),#5b5bd6);box-shadow:0 10px 30px rgba(57,135,229,.35);transition:transform .15s,filter .15s}
+.go:hover{filter:brightness(1.08)}.go:active{transform:translateY(1px)}.go[disabled]{opacity:.6;cursor:wait}
+.err{color:var(--bad);font-size:13px;min-height:20px;margin-top:10px}
+.foot{margin-top:18px;font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.foot .dot{width:7px;height:7px;border-radius:50%;background:var(--s3);box-shadow:0 0 0 3px rgba(27,175,122,.25)}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero" aria-label="Ten x You Marketplace Sales">
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="grid"></div>
+    <div class="brand">Ten × You <span>Athleisure</span></div>
+
+    <div>
+      <div class="lede">
+        <h1>Marketplace<br><em>Sales, live.</em></h1>
+        <p>Dropship orders, PO billing and the day's pace across every marketplace, pulled straight from the ERP.</p>
+      </div>
+
+      <div class="stage" aria-hidden="true">
+        <svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#3987e5"/><stop offset=".5" stop-color="#1baf7a"/><stop offset="1" stop-color="#eda100"/></linearGradient>
+            <linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3987e5" stop-opacity=".35"/><stop offset="1" stop-color="#3987e5" stop-opacity="0"/></linearGradient>
+            <linearGradient id="shoe" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity=".03"/></linearGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <!-- bars: the day, hour by hour -->
+          <g opacity=".55">
+            <rect class="bar" x="20"  y="236" width="16" height="34"  rx="3" fill="#3987e5" style="animation-delay:.10s"/>
+            <rect class="bar" x="44"  y="222" width="16" height="48"  rx="3" fill="#3987e5" style="animation-delay:.18s"/>
+            <rect class="bar" x="68"  y="244" width="16" height="26"  rx="3" fill="#eb6834" style="animation-delay:.26s"/>
+            <rect class="bar" x="92"  y="206" width="16" height="64"  rx="3" fill="#3987e5" style="animation-delay:.34s"/>
+            <rect class="bar" x="116" y="214" width="16" height="56"  rx="3" fill="#1baf7a" style="animation-delay:.42s"/>
+            <rect class="bar" x="140" y="190" width="16" height="80"  rx="3" fill="#3987e5" style="animation-delay:.50s"/>
+            <rect class="bar" x="164" y="200" width="16" height="70"  rx="3" fill="#eda100" style="animation-delay:.58s"/>
+            <rect class="bar" x="188" y="172" width="16" height="98"  rx="3" fill="#3987e5" style="animation-delay:.66s"/>
+          </g>
+          <!-- running total, climbing -->
+          <path class="fillin" d="M20 250 C90 240 140 220 200 200 S300 150 360 120 S470 70 620 30 L620 270 L20 270 Z" fill="url(#area)"/>
+          <path class="draw" d="M20 250 C90 240 140 220 200 200 S300 150 360 120 S470 70 620 30" fill="none" stroke="url(#lg)" stroke-width="4" stroke-linecap="round" filter="url(#glow)"/>
+          <circle cx="620" cy="30" r="6" fill="#eda100" class="fillin"/>
+          <circle cx="620" cy="30" r="6" fill="#eda100" class="pulse" style="animation-delay:3s"/>
+          <!-- the shoe -->
+          <g transform="translate(250 96) scale(.95)">
+            <path class="fillin" d="M30 150 C22 130 20 105 32 88 C42 74 58 66 70 70 C82 74 92 84 104 80 C116 76 124 58 138 52 L152 50 C164 70 198 92 250 104 C300 114 345 116 366 126 C380 133 382 146 372 152 L40 156 C34 156 31 154 30 150 Z" fill="url(#shoe)"/>
+            <path class="draw" d="M30 150 C22 130 20 105 32 88 C42 74 58 66 70 70 C82 74 92 84 104 80 C116 76 124 58 138 52 L152 50 C164 70 198 92 250 104 C300 114 345 116 366 126 C380 133 382 146 372 152 L40 156 C34 156 31 154 30 150 Z" fill="none" stroke="#eef1f6" stroke-width="2.5" stroke-linejoin="round"/>
+            <path class="draw" d="M26 138 C120 146 260 146 382 140" fill="none" stroke="#eef1f6" stroke-opacity=".6" stroke-width="2" style="animation-delay:.6s"/>
+            <path class="draw" d="M160 64 l14 -6 M174 74 l14 -6 M188 84 l14 -6 M204 92 l14 -6" stroke="#eef1f6" stroke-opacity=".7" stroke-width="2.5" stroke-linecap="round" style="animation-delay:1s"/>
+            <path class="draw" d="M228 120 L262 98 M228 98 L262 120" stroke="#eb6834" stroke-width="5" stroke-linecap="round" style="animation-delay:1.6s"/>
+            <path class="draw" d="M4 96 h-40 M0 116 h-60 M8 76 h-28" stroke="#eef1f6" stroke-opacity=".35" stroke-width="2.5" stroke-linecap="round" style="animation-delay:2s"/>
+          </g>
+        </svg>
+        <div class="chip" style="left:4%;top:4%"><i style="background:var(--s1)"></i>Hour by hour</div>
+        <div class="chip" style="right:6%;top:42%;animation-delay:-2s"><i style="background:var(--s4)"></i>Projected close</div>
+        <div class="chip" style="left:30%;bottom:-4%;animation-delay:-4s"><i style="background:var(--s3)"></i>PO billing</div>
+      </div>
+    </div>
+
+    <div class="tags" aria-label="Marketplaces">
+      <span class="tag"><i style="background:var(--s1)"></i>Myntra</span>
+      <span class="tag"><i style="background:var(--s2)"></i>Flipkart</span>
+      <span class="tag"><i style="background:var(--s3)"></i>Amazon</span>
+      <span class="tag"><i style="background:var(--s4)"></i>Scapia</span>
+    </div>
+  </section>
+
+  <main class="side">
+    <form class="card" id="f" novalidate>
+      <h2>Sign in</h2>
+      <p>Enter the team password to open the dashboard.</p>
+      <label for="pw">Password</label>
+      <div class="field">
+        <input id="pw" type="password" autocomplete="current-password" required autofocus>
+        <button class="show" type="button" id="show" aria-label="Show password">Show</button>
+      </div>
+      <button class="go" id="go" type="submit">Open dashboard</button>
+      <div class="err" id="err" role="alert"></div>
+      <div class="foot"><span class="dot"></span>You stay signed in on this browser for 30 days.</div>
+    </form>
+  </main>
+</div>
+<script>
+const f=document.getElementById("f"),pw=document.getElementById("pw"),err=document.getElementById("err"),go=document.getElementById("go");
+document.getElementById("show").onclick=e=>{const s=pw.type==="password";pw.type=s?"text":"password";e.target.textContent=s?"Hide":"Show";e.target.setAttribute("aria-label",s?"Hide password":"Show password");pw.focus()};
+pw.oninput=()=>{err.textContent=""};
+f.onsubmit=async e=>{e.preventDefault();
+  if(!pw.value){err.textContent="Type the password first.";pw.focus();return}
+  go.disabled=true;go.textContent="Checking…";
+  try{
+    const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw.value})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){let n=new URLSearchParams(location.search).get("next")||"/";if(!n.startsWith("/")||n.startsWith("//"))n="/";location.replace(n);return}
+    err.textContent=j.error||"Couldn't sign in. Try again.";f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake");pw.select();
+  }catch(_){err.textContent="Couldn't reach the server. Check your connection."}
+  go.disabled=false;go.textContent="Open dashboard";
+};
+</script>
+</body>
+</html>
